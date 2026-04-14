@@ -303,6 +303,28 @@ class SharedPreferencesUtil {
 
   set devLogsToFileEnabled(bool value) => saveBool('devLogsToFileEnabled', value);
 
+  // --- Self-Hosted Setup ---
+  // Whether the user has completed the self-hosted onboarding wizard.
+  bool get selfHostedSetupCompleted => getBool('selfHostedSetupCompleted');
+  set selfHostedSetupCompleted(bool value) => saveBool('selfHostedSetupCompleted', value);
+
+  // Self-hosted backend URL (set during onboarding, same key used by Developer Settings).
+  // Reuses customBackendUrl so both paths share a single source of truth.
+
+  // Optional: user-supplied Firebase project config for full independence from Omi's cloud auth.
+  // If empty, Omi's default Firebase project (based-hardware-dev) is used for authentication.
+  String get selfHostedFirebaseApiKey => getString('shFirebaseApiKey');
+  set selfHostedFirebaseApiKey(String value) => saveString('shFirebaseApiKey', value);
+
+  String get selfHostedFirebaseAppId => getString('shFirebaseAppId');
+  set selfHostedFirebaseAppId(String value) => saveString('shFirebaseAppId', value);
+
+  String get selfHostedFirebaseProjectId => getString('shFirebaseProjectId');
+  set selfHostedFirebaseProjectId(String value) => saveString('shFirebaseProjectId', value);
+
+  String get selfHostedFirebaseSenderId => getString('shFirebaseSenderId');
+  set selfHostedFirebaseSenderId(String value) => saveString('shFirebaseSenderId', value);
+
   bool get permissionStoreRecordingsEnabled => getBool('permissionStoreRecordingsEnabled');
 
   set permissionStoreRecordingsEnabled(bool value) => saveBool('permissionStoreRecordingsEnabled', value);

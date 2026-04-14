@@ -6,6 +6,7 @@ import 'package:omi/backend/preferences.dart';
 import 'package:omi/pages/home/page.dart';
 import 'package:omi/pages/onboarding/device_selection.dart';
 import 'package:omi/pages/onboarding/permissions/permissions_checker.dart';
+import 'package:omi/pages/onboarding/self_hosted/setup_page.dart';
 import 'package:omi/pages/onboarding/wrapper.dart';
 import 'package:omi/providers/auth_provider.dart';
 import 'package:omi/utils/analytics/mixpanel.dart';
@@ -15,6 +16,11 @@ class MobileApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Self-hosted setup wizard — shown once on first launch before any auth.
+    if (!SharedPreferencesUtil().selfHostedSetupCompleted) {
+      return const SelfHostedSetupPage();
+    }
+
     return Consumer<AuthenticationProvider>(
       builder: (context, authProvider, child) {
         if (authProvider.isSignedIn()) {

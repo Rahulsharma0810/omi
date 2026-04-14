@@ -130,12 +130,39 @@ Future _init() async {
   // Service manager
   await ServiceManager.init();
 
-  // Firebase
+  // SharedPreferences must be loaded before Firebase so we can read any
+  // user-supplied Firebase config saved during the self-hosted onboarding wizard.
+  await SharedPreferencesUtil.init();
+
+  // Firebase — use user-supplied config if available, else fall back to the
+  // default Omi project (based-hardware-dev) baked into the build.
   if (Firebase.apps.isEmpty) {
-    final options = F.env == Environment.prod
-        ? prod.DefaultFirebaseOptions.currentPlatform
-        : dev.DefaultFirebaseOptions.currentPlatform;
-    await Firebase.initializeApp(options: options);
+    final customProjectId = SharedPreferencesUtil().selfHostedFirebaseProjectId;
+    final customApiKey    = SharedPreferencesUtil().selfHostedFirebaseApiKey;
+    final customAppId     = SharedPreferencesUtil().selfHostedFirebaseAppId;
+    final customSenderId  = SharedPreferencesUtil().selfHostedFirebaseSenderId;
+
+    final bool hasCustomFirebase = customProjectId.isNotEmpty &&
+        customApiKey.isNotEmpty &&
+        customAppId.isNotEmpty;
+
+    if (hasCustomFirebase) {
+      debugPrint('Self-hosted: initializing Firebase with custom project "$customProjectId"');
+      await Firebase.initializeApp(
+        options: FirebaseOptions(
+          apiKey: customApiKey,
+          appId: customAppId,
+          projectId: customProjectId,
+          messagingSenderId: customSenderId,
+          storageBucket: '$customProjectId.firebasestorage.app',
+        ),
+      );
+    } else {
+      final options = F.env == Environment.prod
+          ? prod.DefaultFirebaseOptions.currentPlatform
+          : dev.DefaultFirebaseOptions.currentPlatform;
+      await Firebase.initializeApp(options: options);
+    }
   } else {
     // Firebase may already be initialized by native SDK (macOS)
     debugPrint('Firebase already initialized.');
@@ -149,10 +176,15 @@ Future _init() async {
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
   }
 
-  await SharedPreferencesUtil.init();
+  // Self-hosted backend URL — SharedPreferencesUtil already initialized above.
+  final customBackend = SharedPreferencesUtil().customBackendUrl;
+  if (customBackend.isNotEmpty) {
+    Env.overrideApiBaseUrl(customBackend);
+    debugPrint('Self-hosted backend: using $customBackend');
+  }
 
-  // TestFlight environment detection — must be after SharedPreferencesUtil.init()
-  if (F.env == Environment.prod) {
+  // TestFlight environment detection — skip when custom backend already set.
+  if (F.env == Environment.prod && customBackend.isEmpty) {
     final isTestFlight = await EnvironmentDetector.isTestFlight();
     if (isTestFlight) {
       Env.isTestFlight = true;
